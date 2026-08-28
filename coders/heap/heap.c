@@ -1,6 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
+/*                                                        :::      ::::::::   */
 /*   heap.c                                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/08/26 10:59:27 by kurrolopez        #+#    #+#             */
+/*   Updated: 2026/08/26 10:59:28 by kurrolopez       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,48 +31,6 @@ void	heap_free(t_heap *heap)
 	heap->items = NULL;
 	heap->size = 0;
 	heap->capacity = 0;
-}
-
-/*
-** Devuelve 1 si "a" tiene mayor prioridad que "b" (debe salir antes).
-** FIFO: menor número de secuencia (llegó primero).
-** EDF : menor deadline; si empatan, menor secuencia.
-*/
-static int	higher_priority(t_request *a, t_request *b, t_sched sched)
-{
-	if (sched == POL_EDF)
-	{
-		if (a->deadline != b->deadline)
-			return (a->deadline < b->deadline);
-		return (a->seq < b->seq);
-	}
-	return (a->seq < b->seq);
-}
-
-static void	swap_items(t_heap *heap, int i, int j)
-{
-	t_request	*tmp;
-
-	tmp = heap->items[i];
-	heap->items[i] = heap->items[j];
-	heap->items[j] = tmp;
-}
-
-static void	sift_up(t_heap *heap, int i, t_sched sched)
-{
-	int	parent;
-
-	while (i > 0)
-	{
-		parent = (i - 1) / 2;
-		if (higher_priority(heap->items[i], heap->items[parent], sched))
-		{
-			swap_items(heap, i, parent);
-			i = parent;
-		}
-		else
-			break ;
-	}
 }
 
 int	heap_push(t_heap *heap, t_request *req, t_sched sched)
@@ -96,30 +60,6 @@ t_request	*heap_peek(t_heap *heap)
 	if (heap->size == 0)
 		return (NULL);
 	return (heap->items[0]);
-}
-
-static void	sift_down(t_heap *heap, int i, t_sched sched)
-{
-	int	best;
-	int	left;
-	int	right;
-
-	while (1)
-	{
-		best = i;
-		left = 2 * i + 1;
-		right = 2 * i + 2;
-		if (left < heap->size
-			&& higher_priority(heap->items[left], heap->items[best], sched))
-			best = left;
-		if (right < heap->size
-			&& higher_priority(heap->items[right], heap->items[best], sched))
-			best = right;
-		if (best == i)
-			break ;
-		swap_items(heap, i, best);
-		i = best;
-	}
 }
 
 t_request	*heap_pop(t_heap *heap, t_sched sched)

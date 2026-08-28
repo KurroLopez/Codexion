@@ -1,6 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
+/*                                                        :::      ::::::::   */
 /*   dongle.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/08/26 10:59:11 by kurrolopez        #+#    #+#             */
+/*   Updated: 2026/08/26 10:59:13 by kurrolopez       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -10,7 +16,7 @@
 ** Prepara la solicitud de un coder para un dongle. El deadline se calcula
 ** en el momento de encolar, a partir del inicio de su última compilación.
 */
-static void	build_request(t_request *req, t_coder *coder)
+void	build_request(t_request *req, t_coder *coder)
 {
 	t_data	*data;
 
@@ -30,7 +36,7 @@ static void	build_request(t_request *req, t_coder *coder)
 ** ¿Está el dongle libre para concederse ahora? Debe estar disponible y su
 ** cooldown debe haber expirado.
 */
-static int	dongle_ready(t_dongle *dongle)
+int	dongle_ready(t_dongle *dongle)
 {
 	if (!dongle->available)
 		return (0);
@@ -43,7 +49,7 @@ static int	dongle_ready(t_dongle *dongle)
 ** Devuelve el instante absoluto (timespec) para el próximo despertar del
 ** cond_timedwait: como muy tarde cuando expire el cooldown, o 5 ms.
 */
-static void	next_wake(t_dongle *dongle, struct timespec *ts)
+void	next_wake(t_dongle *dongle, struct timespec *ts)
 {
 	long	target;
 	long	nowms;
@@ -54,42 +60,6 @@ static void	next_wake(t_dongle *dongle, struct timespec *ts)
 		target = dongle->cooldown_until;
 	ts->tv_sec = target / 1000L;
 	ts->tv_nsec = (target % 1000L) * 1000000L;
-}
-
-/*
-** Intenta adquirir un dongle. Se encola en la cola de prioridad y espera
-** hasta que es la solicitud de mayor prioridad y el dongle está listo.
-** Devuelve 1 si lo consigue, 0 si la simulación se detuvo mientras esperaba.
-*/
-int	acquire_dongle(t_dongle *dongle, t_coder *coder)
-{
-	t_request		req;
-	t_request		*top;
-	struct timespec	ts;
-
-	build_request(&req, coder);
-	pthread_mutex_lock(&dongle->lock);
-	heap_push(&dongle->queue, &req, dongle->data->sched);
-	while (1)
-	{
-		if (is_stopped(dongle->data))
-			break ;
-		top = heap_peek(&dongle->queue);
-		if (top == &req && dongle_ready(dongle))
-		{
-			heap_pop(&dongle->queue, dongle->data->sched);
-			dongle->available = 0;
-			pthread_mutex_unlock(&dongle->lock);
-			pthread_cond_destroy(&req.cond);
-			return (1);
-		}
-		next_wake(dongle, &ts);
-		pthread_cond_timedwait(&req.cond, &dongle->lock, &ts);
-	}
-	heap_pop(&dongle->queue, dongle->data->sched);
-	pthread_mutex_unlock(&dongle->lock);
-	pthread_cond_destroy(&req.cond);
-	return (0);
 }
 
 /*

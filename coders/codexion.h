@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   codexion.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: codexion                                   +#+  +:+       +#+        */
+/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/07/06                              #+#    #+#             */
-/*                                                     ###   ########        */
+/*   Created: 2026/08/26 10:58:53 by kurrolopez        #+#    #+#             */
+/*   Updated: 2026/08/26 11:08:15 by kurrolopez       ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,15 @@
 # include <unistd.h>
 # include <sys/time.h>
 
-/* Estados de una persona que programa. */
+/* Logs messages */
+# define LOG_TAKE_DONGLE	"[%ld] Coder %d has taken a dongle\n"
+# define LOG_COMPILING		"[%ld] Coder %d is compiling\n"
+# define LOG_DEBUGGING		"[%ld] Coder %d is debugging\n"
+# define LOG_REFACTORING	"[%ld] Coder %d is refactoring\n"
+# define LOG_BURNED_OUT		"[%ld] Coder %d burned out\n"
+# define LOG_SUCCESS		"All coders have compiled. The team is resting.\n"
+
+/* Person state */
 typedef enum e_state
 {
 	STATE_TAKEN,
@@ -30,7 +38,7 @@ typedef enum e_state
 	STATE_BURNED
 }	t_state;
 
-/* Política de arbitraje. */
+/* Scheduling policy */
 typedef enum e_sched
 {
 	POL_FIFO,
@@ -125,33 +133,54 @@ struct s_data
 };
 
 /* utils.c */
-long	now_ms(void);
-long	elapsed_ms(t_data *data);
-int		parse_long(const char *s, long *out);
-void	precise_sleep(t_data *data, long duration);
+long		now_ms(void);
+long		elapsed_ms(t_data *data);
+int			parse_long(const char *s, long *out);
+void		precise_sleep(t_data *data, long duration);
 
 /* heap.c */
-int		heap_init(t_heap *heap, int capacity);
-void	heap_free(t_heap *heap);
-int		heap_push(t_heap *heap, t_request *req, t_sched sched);
+int			heap_init(t_heap *heap, int capacity);
+void		heap_free(t_heap *heap);
+int			heap_push(t_heap *heap, t_request *req, t_sched sched);
 t_request	*heap_peek(t_heap *heap);
 t_request	*heap_pop(t_heap *heap, t_sched sched);
 
+/* heap_utils.c */
+int			higher_priority(t_request *a, t_request *b, t_sched sched);
+void		swap_items(t_heap *heap, int i, int j);
+void		sift_up(t_heap *heap, int i, t_sched sched);
+void		sift_down(t_heap *heap, int i, t_sched sched);
+
 /* dongle.c */
-int		acquire_dongle(t_dongle *dongle, t_coder *coder);
-void	release_dongle(t_dongle *dongle);
+void		build_request(t_request *req, t_coder *coder);
+int			dongle_ready(t_dongle *dongle);
+void		next_wake(t_dongle *dongle, struct timespec *ts);
+void		release_dongle(t_dongle *dongle);
+
+/* dongle_acquire.c */
+int			acquire_dongle(t_dongle *dongle, t_coder *coder);
+
+/* args.c */
+int			parse_args(int argc, char **argv, t_data *data);
 
 /* init.c */
-int		parse_args(int argc, char **argv, t_data *data);
-int		init_data(t_data *data);
-void	destroy_data(t_data *data);
+int			init_data(t_data *data);
+void		destroy_data(t_data *data);
 
-/* simulation.c */
-void	log_state(t_data *data, int id, t_state state);
-int		is_stopped(t_data *data);
-void	set_stopped(t_data *data);
-void	*coder_routine(void *arg);
-void	*monitor_routine(void *arg);
-int		run_simulation(t_data *data);
+/* simulation_state.c */
+void		log_state(t_data *data, int id, t_state state);
+int			is_stopped(t_data *data);
+void		set_stopped(t_data *data);
+int			take_both(t_coder *coder, t_dongle *low, t_dongle *high);
+
+/* simulation_cycle.c */
+void		*coder_routine(void *arg);
+
+/* simulation_monitor.c */
+void		wake_all(t_data *data);
+void		*monitor_routine(void *arg);
+
+/* simulation_run.c */
+int			run_simulation(t_data *data);
 
 #endif

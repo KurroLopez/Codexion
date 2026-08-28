@@ -6,31 +6,38 @@
 
 NAME		= codexion
 
-CC		= cc
-CFLAGS		= -Wall -Wextra -Werror
+CC			= cc
+CFLAGS		= -Wall -Wextra -Werror -pthread
 
-SRC_DIR		= coders
 OBJ_DIR		= obj
+SRC_DIR		= coders
+INCLUDE		= -I coders
 
 SRCS		= main.c \
-		  init.c \
-		  utils.c \
-		  heap.c \
-		  dongle.c \
-		  simulation.c
+			utils/args.c \
+			utils/init.c \
+			utils/utils.c \
+			heap/heap.c \
+			heap/heap_utils.c \
+			dongle/dongle.c \
+			dongle/dongle_acquire.c \
+			simulation/simulation_state.c \
+			simulation/simulation_cycle.c \
+			simulation/simulation_monitor.c \
+			simulation/simulation_run.c
 
-OBJS		= $(SRCS:.c=.o))
+OBJS		 = $(addprefix $(OBJ_DIR)/, $(SRCS:.c=.o))
 
-HEADER		= $(SRC_DIR)/codexion.h
+HEADER		= codexion.h
 
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS)  $(OBJS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADER)
-	@mkdir -p $(OBJ_DIR)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 clean:
 	rm -rf $(OBJ_DIR)
