@@ -3,19 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   heap_utils.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:20 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/26 10:59:22 by kurrolopez       ###   ########.fr       */
+/*   Updated: 2026/09/01 18:28:15 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
 /*
-** Devuelve 1 si "a" tiene mayor prioridad que "b" (debe salir antes).
-** FIFO: menor número de secuencia (llegó primero).
-** EDF : menor deadline; si empatan, menor secuencia.
+** Returns 1 if "a" has higher priority than "b" (must come out first).
+** FIFO: lowest sequence number (arrived first).
+** EDF : shorter deadline; if they tie, shorter sequence.
 */
 int	higher_priority(t_request *a, t_request *b, t_sched sched)
 {

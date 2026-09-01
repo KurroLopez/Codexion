@@ -3,18 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   simulation_cycle.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:57:55 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/26 10:57:59 by kurrolopez       ###   ########.fr       */
+/*   Updated: 2026/09/01 18:27:32 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
 /*
-** Adquiere el par de dongles del coder, siempre en orden de id ascendente,
-** para romper la espera circular.
+** Acquire the pair of dongles from the coder, 
+** always in ascending id order, to break the circular wait.
 */
 static int	acquire_pair(t_coder *coder, t_dongle *left, t_dongle *right)
 {
@@ -23,7 +23,7 @@ static int	acquire_pair(t_coder *coder, t_dongle *left, t_dongle *right)
 	return (take_both(coder, left, right));
 }
 
-/* Compila con ambos dongles tomados y los libera al terminar. */
+/* Compile with both dongles taken and release them when finished. */
 static void	run_compile_phase(t_coder *coder, t_dongle *left, t_dongle *right)
 {
 	t_data	*data;
@@ -41,7 +41,7 @@ static void	run_compile_phase(t_coder *coder, t_dongle *left, t_dongle *right)
 	pthread_mutex_unlock(&coder->lock);
 }
 
-/* Depura y refactoriza. Devuelve 0 si la simulación se detiene a mitad. */
+/* Debug and refactor. Returns 0 if the simulation stops midway. */
 static int	run_debug_refactor(t_data *data, t_coder *coder)
 {
 	if (is_stopped(data))
@@ -56,8 +56,8 @@ static int	run_debug_refactor(t_data *data, t_coder *coder)
 }
 
 /*
-** Un ciclo completo: adquirir dongles, compilar, liberar, depurar y
-** refactorizar. Devuelve 0 si la simulación se detuvo a mitad.
+** A complete cycle: acquire dongles, compile, release, debug, and refactor.
+** Returns 0 if the simulation stopped midway.
 */
 static int	do_cycle(t_coder *coder)
 {

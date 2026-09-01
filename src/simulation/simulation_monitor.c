@@ -6,13 +6,13 @@
 /*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:52 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/31 20:47:12 by fralopez         ###   ########.fr       */
+/*   Updated: 2026/09/01 19:01:07 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-/* Despierta a todos los que esperan en cualquier dongle (para desbloquear). */
+/* Wake all coders that are waiting for a dongle */
 void	wake_all(t_data *data)
 {
 	int	i;
@@ -33,7 +33,7 @@ void	wake_all(t_data *data)
 	}
 }
 
-/* ¿Han compilado todos al menos number_of_compiles_required veces? */
+/* Check if everybody has compiled at least number_of_compiles_required times */
 static int	all_done(t_data *data)
 {
 	int	i;
@@ -56,13 +56,13 @@ static int	all_done(t_data *data)
 }
 
 /*
-** Comprueba burnout de un coder: se agota si no ha empezado a compilar
-** dentro de time_to_burnout desde su última compilación (o el inicio).
+** Check a coder's burnout: it runs out if it hasn't started compiling 
+** within time_to_burnout since its last compilation (or start).
 */
 static int	check_burnout(t_data *data, int i)
 {
 	long	deadline;
-
+	
 	pthread_mutex_lock(&data->coders[i].lock);
 	deadline = data->coders[i].last_compile_start + data->t_burnout;
 	pthread_mutex_unlock(&data->coders[i].lock);
@@ -93,8 +93,10 @@ void	*monitor_routine(void *arg)
 		while (i < data->n)
 		{
 			if (check_burnout(data, i))
+			{
 				printf(LOG_FAULED);
 				break ;
+			}
 			i++;
 		}
 		usleep(300);

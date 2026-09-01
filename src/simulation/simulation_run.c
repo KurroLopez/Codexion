@@ -6,13 +6,13 @@
 /*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:58 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/31 20:44:28 by fralopez         ###   ########.fr       */
+/*   Updated: 2026/09/01 18:22:04 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-/* Lanza el hilo de cada coder. Detiene la simulación si alguna falla. */
+/* Run a thread for each coder. Stop the simulation if one of then fail */
 static void	start_coders(t_data *data)
 {
 	int	i;
@@ -30,7 +30,7 @@ static void	start_coders(t_data *data)
 	}
 }
 
-/* Espera a que terminen todos los hilos de los coders. */
+/* Whait for all coders' threads are finished */
 static void	join_all(t_data *data)
 {
 	int	i;

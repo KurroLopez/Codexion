@@ -3,18 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   dongle.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:11 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/26 10:59:13 by kurrolopez       ###   ########.fr       */
+/*   Updated: 2026/09/01 18:33:23 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
 /*
-** Prepara la solicitud de un coder para un dongle. El deadline se calcula
-** en el momento de encolar, a partir del inicio de su última compilación.
+** Prepare a coder's request for a dongle. The deadline is calculated
+** at the time of enqueuing, starting from the beginning of your last build.
 */
 void	build_request(t_request *req, t_coder *coder)
 {
@@ -33,8 +33,8 @@ void	build_request(t_request *req, t_coder *coder)
 }
 
 /*
-** ¿Está el dongle libre para concederse ahora? Debe estar disponible y su
-** cooldown debe haber expirado.
+** Is the dongle available to be granted now? It must be available and
+** its cooldown must have expired.
 */
 int	dongle_ready(t_dongle *dongle)
 {
@@ -46,8 +46,8 @@ int	dongle_ready(t_dongle *dongle)
 }
 
 /*
-** Devuelve el instante absoluto (timespec) para el próximo despertar del
-** cond_timedwait: como muy tarde cuando expire el cooldown, o 5 ms.
+** Returns the absolute time (timespec) for the next wake-up of
+** cond_timedwait: at the latest when the cooldown expires, or 5 ms.
 */
 void	next_wake(t_dongle *dongle, struct timespec *ts)
 {
@@ -63,8 +63,8 @@ void	next_wake(t_dongle *dongle, struct timespec *ts)
 }
 
 /*
-** Libera un dongle: activa su periodo de enfriamiento y despierta a todos
-** los que esperan para que reevalúen la prioridad.
+** Release a dongle: activate its cooldown period and wake up all
+** those waiting to reassess priority.
 */
 void	release_dongle(t_dongle *dongle)
 {

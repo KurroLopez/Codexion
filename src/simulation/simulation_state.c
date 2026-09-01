@@ -3,16 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   simulation_state.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: kurrolopez <kurrolopez@student.42.fr>      +#+  +:+       +#+        */
+/*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 11:00:11 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/26 11:00:12 by kurrolopez       ###   ########.fr       */
+/*   Updated: 2026/09/01 18:25:38 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-/* Imprime un cambio de estado de forma serializada (mutex sobre stdout). */
 void	log_state(t_data *data, int id, t_state state)
 {
 	pthread_mutex_lock(&data->print_lock);
@@ -52,8 +51,8 @@ void	set_stopped(t_data *data)
 }
 
 /*
-** Adquiere ambos dongles ordenando por id menor primero (rompe la espera
-** circular, condición de Coffman). Devuelve 1 si ambos se consiguen.
+** Acquires both dongles, sorting by lowest id first 
+** (breaks circular wait, Coffman condition). Returns 1 if both are found.
 */
 int	take_both(t_coder *coder, t_dongle *low, t_dongle *high)
 {
