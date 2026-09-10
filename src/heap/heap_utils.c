@@ -77,3 +77,27 @@ void	sift_down(t_heap *heap, int i, t_sched sched)
 		i = best;
 	}
 }
+
+/*
+** Remove a specific request from the heap by pointer identity and
+** restore the heap property. No-op if the request is not present.
+*/
+void	heap_remove(t_heap *heap, t_request *req, t_sched sched)
+{
+	int	i;
+
+	i = 0;
+	while (i < heap->size && heap->items[i] != req)
+		i++;
+	if (i >= heap->size)
+		return ;
+	heap->size--;
+	if (i == heap->size)
+		return ;
+	heap->items[i] = heap->items[heap->size];
+	if (i > 0 && higher_priority(heap->items[i],
+			heap->items[(i - 1) / 2], sched))
+		sift_up(heap, i, sched);
+	else
+		sift_down(heap, i, sched);
+}

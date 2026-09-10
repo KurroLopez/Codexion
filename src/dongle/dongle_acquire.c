@@ -37,8 +37,7 @@ static int	try_take(t_dongle *dongle, t_request *req)
 */
 int	acquire_dongle(t_dongle *dongle, t_coder *coder)
 {
-	t_request		req;
-	struct timespec	ts;
+	t_request	req;
 
 	build_request(&req, coder);
 	pthread_mutex_lock(&dongle->lock);
@@ -51,10 +50,9 @@ int	acquire_dongle(t_dongle *dongle, t_coder *coder)
 			pthread_cond_destroy(&req.cond);
 			return (1);
 		}
-		next_wake(dongle, &ts);
-		pthread_cond_timedwait(&req.cond, &dongle->lock, &ts);
+		pthread_cond_wait(&req.cond, &dongle->lock);
 	}
-	heap_pop(&dongle->queue, dongle->data->sched);
+	heap_remove(&dongle->queue, &req, dongle->data->sched);
 	pthread_mutex_unlock(&dongle->lock);
 	pthread_cond_destroy(&req.cond);
 	return (0);

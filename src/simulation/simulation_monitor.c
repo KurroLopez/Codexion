@@ -6,7 +6,7 @@
 /*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:52 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/09/01 19:01:07 by fralopez         ###   ########.fr       */
+/*   Updated: 2026/09/10 20:16:31 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ static int	all_done(t_data *data)
 static int	check_burnout(t_data *data, int i)
 {
 	long	deadline;
-	
+
 	pthread_mutex_lock(&data->coders[i].lock);
 	deadline = data->coders[i].last_compile_start + data->t_burnout;
 	pthread_mutex_unlock(&data->coders[i].lock);
@@ -75,10 +75,27 @@ static int	check_burnout(t_data *data, int i)
 	return (0);
 }
 
+/* Scan every coder for burnout; returns 1 (and logs) once one burned out. */
+static int	scan_burnout(t_data *data)
+{
+	int	i;
+
+	i = 0;
+	while (i < data->n)
+	{
+		if (check_burnout(data, i))
+		{
+			printf(LOG_FAULED);
+			return (1);
+		}
+		i++;
+	}
+	return (0);
+}
+
 void	*monitor_routine(void *arg)
 {
 	t_data	*data;
-	int		i;
 
 	data = (t_data *)arg;
 	while (!is_stopped(data))
@@ -89,16 +106,12 @@ void	*monitor_routine(void *arg)
 			printf(LOG_SUCCESS);
 			break ;
 		}
-		i = 0;
-		while (i < data->n)
+		if (scan_burnout(data))
 		{
-			if (check_burnout(data, i))
-			{
-				printf(LOG_FAULED);
-				break ;
-			}
-			i++;
+			printf(LOG_FAULED);
+			break ;
 		}
+		wake_all(data);
 		usleep(300);
 	}
 	wake_all(data);

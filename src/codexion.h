@@ -145,6 +145,7 @@ void		heap_free(t_heap *heap);
 int			heap_push(t_heap *heap, t_request *req, t_sched sched);
 t_request	*heap_peek(t_heap *heap);
 t_request	*heap_pop(t_heap *heap, t_sched sched);
+void		heap_remove(t_heap *heap, t_request *req, t_sched sched);
 
 /* heap_utils.c */
 int			higher_priority(t_request *a, t_request *b, t_sched sched);
@@ -155,7 +156,6 @@ void		sift_down(t_heap *heap, int i, t_sched sched);
 /* dongle.c */
 void		build_request(t_request *req, t_coder *coder);
 int			dongle_ready(t_dongle *dongle);
-void		next_wake(t_dongle *dongle, struct timespec *ts);
 void		release_dongle(t_dongle *dongle);
 
 /* dongle_acquire.c */

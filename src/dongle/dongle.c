@@ -46,23 +46,6 @@ int	dongle_ready(t_dongle *dongle)
 }
 
 /*
-** Returns the absolute time (timespec) for the next wake-up of
-** cond_timedwait: at the latest when the cooldown expires, or 5 ms.
-*/
-void	next_wake(t_dongle *dongle, struct timespec *ts)
-{
-	long	target;
-	long	nowms;
-
-	nowms = now_ms();
-	target = nowms + 5;
-	if (dongle->cooldown_until > nowms && dongle->cooldown_until < target)
-		target = dongle->cooldown_until;
-	ts->tv_sec = target / 1000L;
-	ts->tv_nsec = (target % 1000L) * 1000000L;
-}
-
-/*
 ** Release a dongle: activate its cooldown period and wake up all
 ** those waiting to reassess priority.
 */
