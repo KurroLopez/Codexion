@@ -6,7 +6,7 @@
 /*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:59:52 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/09/10 20:16:31 by fralopez         ###   ########.fr       */
+/*   Updated: 2026/09/14 20:15:47 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,7 +85,6 @@ static int	scan_burnout(t_data *data)
 	{
 		if (check_burnout(data, i))
 		{
-			printf(LOG_FAULED);
 			return (1);
 		}
 		i++;
