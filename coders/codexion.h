@@ -6,7 +6,7 @@
 /*   By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/26 10:58:53 by kurrolopez        #+#    #+#             */
-/*   Updated: 2026/08/31 20:46:28 by fralopez         ###   ########.fr       */
+/*   Updated: 2026/09/15 18:26:39 by fralopez         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,11 +21,11 @@
 # include <sys/time.h>
 
 /* Logs messages */
-# define LOG_TAKE_DONGLE	"[%ld] Coder %d has taken a dongle\n"
-# define LOG_COMPILING		"[%ld] Coder %d is compiling\n"
-# define LOG_DEBUGGING		"[%ld] Coder %d is debugging\n"
-# define LOG_REFACTORING	"[%ld] Coder %d is refactoring\n"
-# define LOG_BURNED_OUT		"[%ld] Coder %d burned out\n"
+# define LOG_TAKE_DONGLE	"%ld %d has taken a dongle\n"
+# define LOG_COMPILING		"%ld %d is compiling\n"
+# define LOG_DEBUGGING		"%ld %d is debugging\n"
+# define LOG_REFACTORING	"%ld %d is refactoring\n"
+# define LOG_BURNED_OUT		"%ld %d burned out\n"
 # define LOG_SUCCESS		"All coders have compiled. The team is resting.\n"
 # define LOG_FAULED			"One coder is burned. Process finished.\n"
 # define ERROR_ARG			"Arg <%s> is invalid.\n"

@@ -6,7 +6,7 @@
 #    By: fralopez <fralopez@student.42malaga.com    +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/08/31 18:53:02 by fralopez          #+#    #+#              #
-#    Updated: 2026/08/31 18:56:27 by fralopez         ###   ########.fr        #
+#    Updated: 2026/09/15 18:39:01 by fralopez         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,11 +17,11 @@
 NAME		= codexion
 
 CC			= cc
-CFLAGS		= -Wall -Wextra -Werror -pthread
+CFLAGS		= -Wall -Wextra -Werror -pthread -g
 
 OBJ_DIR		= obj
-SRC_DIR		= src
-INCLUDE		= -I src
+SRC_DIR		= coders
+INCLUDE		= -I coders
 
 SRCS		= main.c \
 			utils/args.c \

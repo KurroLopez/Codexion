@@ -1,50 +1,50 @@
-*Este proyecto ha sido creado como parte del currículo de 42 por fralopez*
+*This project has been created as part of the 42 curriculum by fralopez.*
 
-# Descripción
+# Description
 
-`codexion` es un programa en C, escrito sobre `pthread`, en que hay **programadores ("coders")** que necesitan **dos "dongles"** (llaves USB de seguridad compartidas con sus vecinos) para poder **compilar**.
+`codexion` is a C program built using `pthread` in which **programmers ("coders")** require **two "dongles"** (shared USB security keys) in order to **compile**.
 
-El objetivo es simular concurrencia real con hilos: evitar interbloqueos (*deadlock*) e inanición (*starvation*), gestionar un periodo de enfriamiento (*cooldown*) tras soltar cada dongle, y detectar con precisión cuándo un programador se "quema" (*burnout*) por no conseguir compilar a tiempo. 
+The goal is to simulate real concurrency using threads: avoiding deadlock and starvation, managing a cooldown period after releasing each dongle, and accurately detecting when a programmer suffers "burnout" from failing to compile in time.
 
-# Instrucciones
+# Instructions
 
-## Compilación
+## Compilation
 
 ```sh
-make        # compila y genera el ejecutable ./codexion
-make clean  # elimina los objetos (obj/)
-make fclean # elimina objetos y el ejecutable
+make        # compiles and generates the ./codexion executable
+make clean  # deletes the objects (obj/)
+make fclean # removes object files and the executable
 make re     # fclean + all
 ```
 
-## Ejecución
+## implementation
 
-El programa exige **exactamente 8 argumentos** (validados en [args.c](src/utils/args.c)):
+The program requires **exactly 8 arguments** (validated in [args.c](src/utils/args.c)):
 
 ```sh
 ./codexion <number_of_coders> <time_to_burnout> <time_to_compile> <time_to_debug> <time_to_refactor> <number_of_compiles_required> <dongle_cooldown> <scheduler>
 ```
 
-| Argumento | Descripción |
+| Argument | Description |
 |---|---|
-| `number_of_coders` | Número de programadores (hilos) a simular |
-| `time_to_burnout` | Tiempo máximo (ms) sin compilar antes de "quemarse" |
-| `time_to_compile` | Duración (ms) de la fase de compilación |
-| `time_to_debug` | Duración (ms) de la fase de debug |
-| `time_to_refactor` | Duración (ms) de la fase de refactor |
-| `number_of_compiles_required` | Nº de compilaciones que debe alcanzar cada coder para que la simulación termine con éxito (`0` = sin límite) |
-| `dongle_cooldown` | Tiempo (ms) que un dongle permanece bloqueado tras soltarse |
-| `scheduler` | Política de la cola de espera de cada dongle: `fifo` o `edf` |
+| `number_of_coders` | Number of programmers (threads) to simulate |
+| `time_to_burnout` | Maximum time (ms) without compiling before "burning out" |
+| `time_to_compile` | Duration (ms) of the compilation phase |
+| `time_to_debug` | Duration (ms) of the debugging phase |
+| `time_to_refactor` | Duration (ms) of the refactoring phase |
+| `number_of_compiles_required` | Number of compilations each coder must complete for the simulation to end successfully (`0` = no limit) |
+| `dongle_cooldown` | Time (ms) a dongle remains locked after being released |
+| `scheduler` | Waiting queue policy for each dongle: `fifo` or `edf` |
 
-Todos los valores numéricos deben ser enteros positivos; `scheduler` debe ser literalmente `fifo` o `edf`. Cualquier argumento inválido aborta la ejecución con `Arg <nombre> is invalid.`
+All numeric values ​​must be positive integers; `scheduler` must be literally `fifo` or `edf`. Any invalid argument aborts execution with `Arg <name> is invalid.`
 
-Ejemplo:
+Example:
 
 ```sh
 ./codexion 5 800 200 100 100 7 100 edf
 ```
 
-# Recursos
+# Resources
 [Condiciones de Coffman](https://1984.lsi.us.es/wiki-ssoo/index.php/Condiciones_para_el_interbloqueo_y_estrategias_de_resoluci%C3%B3n)
 
 [Uso de pthread](https://www.geeksforgeeks.org/c/thread-functions-in-c-c/)
@@ -55,72 +55,72 @@ Ejemplo:
 
 # Blocking cases handled
 
-## 1. Prevención de interbloqueos (deadlock) y condiciones de Coffman
+## 1. Deadlock prevention and Coffman conditions
 
-Cada `coder` necesita **dos** dongles a la vez (izquierda y derecha), lo que reúne las cuatro condiciones de Coffman: exclusión mutua (un dongle tiene un único dueño), retención y espera (se pide un segundo recurso mientras se retiene el primero), no apropiación (nadie puede arrebatar un dongle a otro hilo) y espera circular.
+Each `coder` requires **two** dongles simultaneously (left and right), satisfying the four Coffman conditions: mutual exclusion (a dongle has a single owner), hold and wait (a second resource is requested while the first is held), no preemption (no one can forcibly take a dongle from another thread), and circular wait.
 
-- La espera circular se rompe forzando un **orden total de adquisición**: `acquire_pair()` ([simulation_cycle.c](src/simulation/simulation_cycle.c)) siempre adquiere primero el dongle de **menor id** y después el de mayor id, sin importar cuál sea "izquierda" o "derecha" para ese coder (`take_both()` en [simulation_state.c](src/simulation/simulation_state.c)). Con N hilos pidiendo recursos siempre en el mismo orden global, el ciclo A→B→A necesario para el interbloqueo no puede formarse.
-- Si la segunda adquisición falla (por ejemplo, la simulación se detiene mientras el coder esperaba), el primer dongle ya obtenido se libera de inmediato (`release_dongle(low)`), evitando que un hilo se quede reteniendo un recurso que ya no va a usar.
+- The circular wait is broken by enforcing a **total acquisition order**: `acquire_pair()` ([simulation_cycle.c](src/simulation/simulation_cycle.c)) always acquires the dongle with the **lower ID** first and then the one with the higher ID, regardless of which is "left" or "right" for that coder (`take_both()` in [simulation_state.c](src/simulation/simulation_state.c)). With N threads requesting resources always in the same global order, the A→B→A cycle required for deadlock cannot form.
+- If the second acquisition fails (for example, the simulation stops while the coder is waiting), the first dongle already obtained is immediately released (`release_dongle(low)`), preventing a thread from holding onto a resource it will no longer use.
+- 
+## 2. Starvation prevention
 
-## 2. Prevención de inanición (starvation)
+Each dongle maintains a **priority queue** (`t_heap`) for pending requests, rather than allowing threads to compete freely for a single condition variable—a "free-for-all" scenario where a thread that wakes up earlier could steal the turn from another that has been waiting longer.
 
-Cada dongle mantiene una **cola de prioridad** (`t_heap`) con las peticiones pendientes, en lugar de dejar que los hilos compitan libremente por una única variable de condición ("sálvese quien pueda"), donde el hilo que se despierta antes podría robarle el turno a otro que lleva más tiempo esperando.
+- **FIFO Policy**: Requests are served strictly in the order of arrival using `seq`, a monotonic counter protected by `seq_lock` (`build_request()` in [dongle.c](src/dongle/dongle.c)). No one can indefinitely jump ahead of someone who arrived earlier.
+- **EDF Policy** (*Earliest Deadline First*): priority is given to the task with the nearest burnout deadline (`deadline = last_compile_start + t_burnout`), using `seq` as a tie-breaker. This prioritizes the task at greatest risk of burnout while still guaranteeing a deterministic order.
+- `try_take()` ([dongle_acquire.c](src/dongle/dongle_acquire.c)) grants the dongle only to the request at the **top of the heap** (`heap_peek`); no thread can seize the resource "by surprise" simply because it is available—the queue order is always respected.
 
-- **Política FIFO**: se sirve estrictamente en orden de llegada, usando `seq`, un contador monótono protegido por `seq_lock` (`build_request()` en [dongle.c](src/dongle/dongle.c)). Nadie puede adelantarse indefinidamente a quien llegó antes.
-- **Política EDF** (*Earliest Deadline First*): se prioriza a quien tiene el *deadline* de burnout más cercano (`deadline = last_compile_start + t_burnout`), usando `seq` como desempate. Esto prioriza a quien más riesgo tiene de agotarse sin dejar de garantizar un orden determinista.
-- `try_take()` ([dongle_acquire.c](src/dongle/dongle_acquire.c)) solo concede el dongle a la petición situada en la **cima del heap** (`heap_peek`): ningún hilo puede tomar el recurso "por sorpresa" solo por estar disponible, siempre se respeta el orden de la cola.
+## 3. Cooldown management
 
-## 3. Gestión del cooldown
+After compiling, a dongle cannot be reused immediately:
 
-Tras compilar, un dongle no puede reutilizarse de inmediato:
+- `release_dongle()` sets `cooldown_until = now_ms() + cooldown` while holding the dongle's own mutex.
+- `dongle_ready()` simultaneously requires `available == 1` **and** `now_ms() >= cooldown_until`.
+-`next_wake()` calculates the exact instant at which the cooldown expires (or a maximum of 5 ms) and uses it as the upper bound of `pthread_cond_timedwait`, so that waiting threads wake up just when the cooldown ends, without aggressive *busy-waiting* or unnecessary delays.
 
-- `release_dongle()` marca `cooldown_until = now_ms() + cooldown` bajo el mutex del propio dongle.
-- `dongle_ready()` exige simultáneamente `available == 1` **y** `now_ms() >= cooldown_until`.
-- `next_wake()` calcula el instante exacto en el que expira el cooldown (o un máximo de 5 ms) y lo usa como límite superior de `pthread_cond_timedwait`, de modo que los hilos en espera se despiertan justo cuando el cooldown termina, sin *busy-waiting* agresivo ni retrasos innecesarios.
+## 4. Accurate detection of burnout
 
-## 4. Detección precisa del agotamiento (burnout)
+- The `monitor_routine` thread ([simulation_monitor.c](src/simulation/simulation_monitor.c)) recalculates the deadline `last_compile_start + t_burnout` for each coder—holding the `coder->lock`—and compares it against `now_ms()` within a high-frequency polling loop (`usleep(300)`), thereby minimizing the gap between actual burnout and its detection.
+- `precise_sleep()` ([utils.c](src/utils/utils.c)) does not sleep for the entire interval at once; instead, it breaks the time down into 200 µs segments and checks `is_stopped()` during each iteration, allowing any thread to react almost instantly when the monitor signals a burnout or the successful completion of the simulation.
+- Reading `last_compile_start` is protected by the same mutex (`coder->lock`) as writing to it in `run_compile_phase()`, preventing comparison against a partially written value.
 
-- El hilo `monitor_routine` ([simulation_monitor.c](src/simulation/simulation_monitor.c)) recalcula, para cada coder y bajo `coder->lock`, el deadline `last_compile_start + t_burnout` y lo compara con `now_ms()` en un bucle de sondeo de alta frecuencia (`usleep(300)`), minimizando el margen entre el agotamiento real y su detección.
-- `precise_sleep()` ([utils.c](src/utils/utils.c)) no duerme el intervalo completo de golpe: lo divide en tramos de 200 µs y comprueba `is_stopped()` en cada iteración, permitiendo que cualquier hilo reaccione casi instantáneamente cuando el monitor declara un burnout o el éxito de la simulación.
-- La lectura de `last_compile_start` está protegida por el mismo mutex (`coder->lock`) que su escritura en `run_compile_phase()`, evitando comparar contra un valor a medio escribir.
+## 5. Log serialization
 
-## 5. Serialización del log
-
-- Todas las escrituras en stdout pasan por `log_state()` ([simulation_state.c](src/simulation/simulation_state.c)), que toma `print_lock` antes de imprimir y lo libera después: los mensajes de distintos hilos (coders y monitor) nunca se intercalan.
-- Dentro de esa misma sección crítica se comprueba `is_stopped()`: una vez detenida la simulación, se descarta cualquier log que no sea `STATE_BURNED`, evitando mensajes raros impresos justo después de que termine la simulación.
-- Al estar la comprobación de `stop` y el `printf` dentro de la misma región protegida por `print_lock`, no hay ventana de carrera entre "decidir si logear" y "logear".
+- All writes to stdout pass through `log_state()` ([simulation_state.c](src/simulation/simulation_state.c)), which acquires `print_lock` before printing and releases it afterwards; consequently, messages from different threads (coders and monitor) never interleave.
+- Within that same critical section, `is_stopped()` is checked: once the simulation has stopped, any log other than `STATE_BURNED` is discarded, preventing odd messages from being printed immediately after the simulation ends.
+- Since the check for `stop` and the `printf` are within the same region protected by `print_lock`, there is no race window between "deciding whether to log" and "logging."
 
 # Thread synchronization mechanisms
 
-## Primitivas usadas
+## Used primitives
 
-El proyecto se apoya únicamente en las primitivas estándar de pthreads — no hay ninguna implementación personalizada de eventos —, pero con un mutex por recurso en lugar de un candado global, para minimizar la contención entre hilos:
+The project relies solely on standard pthreads primitives—there is no custom event implementation—but uses one mutex per resource instead of a global lock to minimize thread contention:
 
-| Primitiva | Dónde | Protege |
+| Primitive | Location | Protects |
 |---|---|---|
-| `pthread_mutex_t dongle->lock` | uno por cada dongle | `available`, `cooldown_until` y la cola de prioridad (`t_heap`) de ese dongle |
-| `pthread_mutex_t coder->lock` | uno por cada coder | `last_compile_start`, `compiles` de ese coder |
-| `pthread_mutex_t stop_lock` | global (`t_data`) | el flag `stop` de fin de simulación |
-| `pthread_mutex_t seq_lock` | global (`t_data`) | el contador `seq_counter` (orden FIFO / desempate EDF) |
-| `pthread_mutex_t print_lock` | global (`t_data`) | la salida por `stdout` |
-| `pthread_cond_t req.cond` | uno por cada petición en cola (`t_request`) | espera/aviso de disponibilidad de un dongle concreto |
+| `pthread_mutex_t dongle->lock` | one per dongle | `available`, `cooldown_until`, and the priority queue (`t_heap`) for that dongle |
+| `pthread_mutex_t coder->lock` | one per coder | `last_compile_start` and `compiles` for that coder |
+| `pthread_mutex_t stop_lock` | global (`t_data`) | the simulation termination flag `stop` |
+| `pthread_mutex_t seq_lock` | global (`t_data`) | the `seq_counter` (FIFO order / EDF tie-breaking) |
+| `pthread_mutex_t print_lock` | global (`t_data`) | `stdout` output |
+| `pthread_cond_t req.cond` | one per queued request (`t_request`) | waiting/notification for the availability of a specific dongle |
 
-Cada petición encolada tiene su **propia** variable de condición en lugar de compartir una única `cond` por dongle. Combinado con `pthread_cond_timedwait` (nunca un `pthread_cond_wait` puro), cada hilo despertado siempre revalida por sí mismo si le toca (`try_take`) antes de continuar, en lugar de asumir que un aviso implica que el recurso es suyo.
+Each queued request has its **own** condition variable rather than sharing a single `cond` per dongle. Combined with `pthread_cond_timedwait` (never a plain `pthread_cond_wait`), each awakened thread always independently re-verifies whether it is its turn (`try_take`) before proceeding, rather than assuming that a notification implies the resource is available to it.
 
-## Cómo coordinan el acceso a los recursos compartidos
+## How they coordinate access to shared resources
 
-**Dongles.** `acquire_dongle()` ([dongle_acquire.c](src/dongle/dongle_acquire.c)) toma `dongle->lock`, encola la petición (`heap_push`) y entra en un bucle `while (!is_stopped())`:
-1. Intenta tomar el dongle con `try_take()`: comprobar prioridad + disponibilidad y hacer `heap_pop` + `available = 0` ocurre en una única sección crítica, así que nunca dos hilos pueden ver el dongle libre y tomarlo a la vez.
-2. Si no puede, calcula el próximo instante de reevaluación (`next_wake`) y llama a `pthread_cond_timedwait(&req.cond, &dongle->lock, &ts)`, que libera el mutex de forma atómica mientras espera y lo readquiere antes de volver a comprobar la condición — el patrón estándar "comprobar la condición en un bucle, con el lock tomado", que evita tanto carreras como despertares perdidos (el `timedwait` además garantiza reevaluación periódica aunque no llegue ningún `broadcast`).
+**Dongles.** `acquire_dongle()` ([dongle_acquire.c](src/dongle/dongle_acquire.c)) acquires `dongle->lock`, enqueues the request (`heap_push`), and enters a `while (!is_stopped())` loop:
+1. Try to acquire the dongle using `try_take()`: checking priority and availability, followed by `heap_pop` and setting `available = 0`, all occurs within a single critical section, so two threads can never see the dongle as free and acquire it simultaneously.
+2. If it cannot, it calculates the next re-evaluation time (`next_wake`) and calls `pthread_cond_timedwait(&req.cond, &dongle->lock, &ts)`, which atomically releases the mutex while waiting and re-acquires it before re-checking the condition—the standard "check condition in a loop while holding the lock" pattern, which prevents both race conditions and missed wake-ups (the `timedwait` also guarantees periodic re-evaluation even if no `broadcast` arrives).
 
-`release_dongle()` toma el mismo `dongle->lock` para actualizar `available`/`cooldown_until` y para hacer `pthread_cond_broadcast` sobre todas las peticiones en cola. El *broadcast* se emite con el mutex tomado, así ningún hilo puede quedar "a medio camino" entre comprobar la condición y ponerse a esperar — se evita la carrera clásica de señalizar antes de que el receptor esté realmente escuchando.
+`release_dongle()` acquires the same `dongle->lock` to update `available`/`cooldown_until` and to call `pthread_cond_broadcast` for all queued requests. The broadcast is issued while the mutex is held, so no thread can get stuck "halfway" between checking the condition and waiting—thereby avoiding the classic race condition of signaling before the receiver is actually listening.
 
-**Log compartido.** Protegido íntegramente por `print_lock`, como se describe en la sección anterior: es la única primitiva que rodea una operación de E/S, evitando que se mezclen líneas de distintos hilos.
+**Shared log.** Fully protected by `print_lock`, as described in the previous section: it is the only primitive surrounding an I/O operation, preventing lines from different threads from becoming intermingled.
 
-**Estado del monitor y comunicación thread-safe coders ↔ monitor.** El monitor no usa señales ni comparte estructuras "en crudo" con los coders: toda la comunicación pasa por memoria protegida por mutex, leída y escrita en ambos sentidos:
-- *Coders → monitor*: cada coder actualiza `last_compile_start` y `compiles` bajo su propio `coder->lock` (en `run_compile_phase()`, [simulation_cycle.c](src/simulation/simulation_cycle.c)). El monitor, en `check_burnout()` y `all_done()` ([simulation_monitor.c](src/simulation/simulation_monitor.c)), lee esos mismos campos tomando el mismo `coder->lock` antes de comparar contra `now_ms()` o contra `compiles_required`. Al usar el mismo mutex en ambos lados, el monitor nunca puede leer un `last_compile_start` a medio escribir, ni un contador de compilaciones inconsistente.
-- *Monitor → coders*: el monitor nunca llama directamente a un coder ni modifica su estado; se limita a escribir el flag global `stop` a través de `set_stopped()`, que toma `stop_lock`. Los coders, en cada iteración de su bucle (`coder_routine()`) y dentro de `precise_sleep()` y `acquire_dongle()`, consultan ese mismo flag mediante `is_stopped()` (mismo `stop_lock`). Así, la señal "parar" viaja de un hilo a otro exclusivamente a través de una única variable protegida por mutex, nunca por variables sin sincronizar ni por señales POSIX.
-- Cuando el monitor decide detener la simulación (burnout o éxito), llama a `wake_all()` ([simulation_monitor.c](src/simulation/simulation_monitor.c)), que recorre cada dongle tomando su `dongle->lock` y hace `pthread_cond_broadcast` sobre todas las peticiones en cola. Esto es necesario porque un coder puede estar bloqueado en `pthread_cond_timedwait` esperando un dongle: sin este aviso explícito tendría que esperar hasta su próximo timeout (máx. 5 ms) para darse cuenta de que `stop` cambió — con el broadcast, la reacción es inmediata y ningún hilo se queda esperando indefinidamente al final de la simulación.
-- Este esquema evita la típica condición de carrera "leer-decidir-actuar" entre monitor y coders: si el monitor comprobara `last_compile_start` sin lock mientras el coder lo está escribiendo, podría leer una mezcla de bytes antiguos y nuevos (en plataformas donde `long` no se escribe atómicamente) y declarar un burnout falso, o al revés, no detectarlo a tiempo. Al compartir siempre el mismo mutex para ese campo, la lectura del monitor y la escritura del coder quedan totalmente serializadas.
-
-**Ejemplo concreto de condición de carrera evitada (dongles).** Si dos coders comparten un dongle (p. ej. el coder 1 usa los dongles 1 y 2, y el coder 2 usa los dongles 2 y 3) y cada uno comprobara `dongle->available` y luego lo pusiera a `0` como dos pasos sueltos sin mutex, ambos podrían leer `available == 1` a la vez y los dos empezar a compilar con el mismo dongle. Al envolver la comprobación (`dongle_ready`) y la asignación (`available = 0`) dentro de la misma sección crítica protegida por `dongle->lock` (dentro de `try_take`), esa doble concesión es imposible: solo un hilo puede ejecutar esa sección a la vez, y el otro la reintentará en su siguiente `timedwait`.
+**Monitor state and thread-safe communication between coders and the monitor.** The monitor does not use signals or share "raw" structures with the coders; all communication takes place via mutex-protected memory, read and written in both directions:
+- *Coders → monitor*: each coder updates `last_compile_start` and `compiles` while holding its own `coder->lock` (in `run_compile_phase()`, [simulation_cycle.c](src/simulation/simulation_cycle.c)). The monitor, in `check_burnout()` and `all_done()` ([simulation_monitor.c](src/simulation/simulation_monitor.c)), reads those same fields while holding the same `coder->lock` before comparing them against `now_ms()` or `compiles_required`. By using the same mutex on both sides, the monitor never reads a partially written `last_compile_start` or an inconsistent compilation counter.
+- *Monitor → coders*: the monitor never directly calls a coder or modifies its state; instead, it simply writes to the global `stop` flag via `set_stopped()`, which acquires the `stop_lock`. During each iteration of their loop (`coder_routine()`)—and within `precise_sleep()` and `acquire_dongle()`—the coders check this same flag using `is_stopped()` (utilizing the same `stop_lock`). Thus, the "stop" signal travels from one thread to another exclusively via a single mutex-protected variable, never through unsynchronized variables or POSIX signals.
+- When the monitor decides to stop the simulation (due to burnout or success), it calls `wake_all()` ([simulation_monitor.c](src/simulation/simulation_monitor.c)), which iterates through each dongle, acquires its `dongle->lock`, and issues a `pthread_cond_broadcast` for all queued requests. This is necessary because a coder thread might be blocked in `pthread_cond_timedwait` while waiting for a dongle; without this explicit notification, it would have to wait until its next timeout (max. 5 ms) to realize that the `stop` flag had changed. With the broadcast, the reaction is immediate, ensuring no thread remains waiting indefinitely at the end of the simulation.
+- This scheme avoids the typical "read-decide-act" race condition between the monitor and the coders: if the monitor were to check `last_compile_start` without a lock while a coder was writing to it, it could read a mix of old and new bytes (on platforms where `long` is not written atomically) and report a false burnout—or, conversely, fail to detect one in time. By always sharing the same mutex for that field, the monitor's read and the coder's write operations are fully serialized.
+  
+**A concrete example of a race condition being avoided (dongles).** If two coders share a dongle (e.g., Coder 1 uses dongles 1 and 2, and Coder 2 uses dongles 2 and 3) and each were to check `dongle->available` and then set it to `0` as two separate steps without a mutex, both could read `available == 1` simultaneously and start compiling using the same dongle. By wrapping the check (`dongle_ready`) and the assignment (`available = 0`) within the same critical section protected by `dongle->lock` (inside `try_take`), such double allocation becomes impossible: only one thread can execute that section at a time, and the other will retry during its next `timedwait`.
